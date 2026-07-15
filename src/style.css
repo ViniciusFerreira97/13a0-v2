@@ -1,19 +1,30 @@
 :root {
-  --pitch: #0e7a41;
-  --pitch-dark: #0a5c30;
-  --gold: #d69e0a;
-  --bg: #f5f6f4;
-  --surface: #ffffff;
-  --surface-2: #eef1ec;
-  --text: #14171a;
-  --text-muted: #5c6560;
-  --border: #dfe3de;
-  --danger: #c0392b;
-  --shadow: rgba(15, 30, 20, 0.08) 0 4px 14px -2px;
+  /* "Almanaque Continental" — identidade do TICTACA: papel de almanaque de
+     futebol, tinta de carimbo, fita de medalha e ouro de taça. */
+  --pitch: #1c6b40;
+  --pitch-dark: #0f4a2a;
+  --gold: #c8981f;
+  --gold-bright: #e0b23a;
+  --accent: #b3272d;
+  --accent-dark: #8c1f24;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --bg: #efe6cd;
+  --surface: #fbf6e7;
+  --surface-2: #f3ead2;
+  --text: #211b12;
+  --text-muted: #756c53;
+  --border: #d8c79b;
+  --shadow: 3px 3px 0 rgba(33, 27, 18, 0.16);
+  --shadow-sm: 2px 2px 0 rgba(33, 27, 18, 0.16);
+  --shadow-ink: 3px 3px 0 var(--text);
+  --danger: #b3272d;
 
-  font: 16px/1.45 var(--sans);
+  --display: 'Anton', 'Impact', sans-serif;
+  --body: 'Manrope', system-ui, 'Segoe UI', sans-serif;
+  --numeral: 'Space Mono', ui-monospace, monospace;
+  --sans: var(--body);
+
+  font: 16px/1.45 var(--body);
   color-scheme: light dark;
   color: var(--text);
   background: var(--bg);
@@ -25,43 +36,61 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --pitch: #22c55e;
-    --pitch-dark: #16a34a;
-    --gold: #eab308;
-    --bg: #0e1310;
-    --surface: #171d19;
-    --surface-2: #1e2621;
-    --text: #edf2ee;
-    --text-muted: #93a199;
-    --border: #2a332c;
-    --shadow: rgba(0, 0, 0, 0.4) 0 4px 14px -2px;
+    --pitch: #1e7a46;
+    --pitch-dark: #0e3d24;
+    --gold: #e0b23a;
+    --gold-bright: #f0c968;
+    --accent: #d9483f;
+    --accent-dark: #b3352e;
+
+    --bg: #0b1510;
+    --surface: #121d16;
+    --surface-2: #17251b;
+    --text: #ede6d2;
+    --text-muted: #8a9686;
+    --border: #2a3a2c;
+    --shadow: 3px 3px 0 rgba(0, 0, 0, 0.55);
+    --shadow-sm: 2px 2px 0 rgba(0, 0, 0, 0.55);
+    --shadow-ink: 3px 3px 0 #000;
   }
 }
 
 :root[data-theme='dark'] {
-  --pitch: #22c55e;
-  --pitch-dark: #16a34a;
-  --gold: #eab308;
-  --bg: #0e1310;
-  --surface: #171d19;
-  --surface-2: #1e2621;
-  --text: #edf2ee;
-  --text-muted: #93a199;
-  --border: #2a332c;
-  --shadow: rgba(0, 0, 0, 0.4) 0 4px 14px -2px;
+  --pitch: #1e7a46;
+  --pitch-dark: #0e3d24;
+  --gold: #e0b23a;
+  --gold-bright: #f0c968;
+  --accent: #d9483f;
+  --accent-dark: #b3352e;
+
+  --bg: #0b1510;
+  --surface: #121d16;
+  --surface-2: #17251b;
+  --text: #ede6d2;
+  --text-muted: #8a9686;
+  --border: #2a3a2c;
+  --shadow: 3px 3px 0 rgba(0, 0, 0, 0.55);
+  --shadow-sm: 2px 2px 0 rgba(0, 0, 0, 0.55);
+  --shadow-ink: 3px 3px 0 #000;
 }
 
 :root[data-theme='light'] {
-  --pitch: #0e7a41;
-  --pitch-dark: #0a5c30;
-  --gold: #d69e0a;
-  --bg: #f5f6f4;
-  --surface: #ffffff;
-  --surface-2: #eef1ec;
-  --text: #14171a;
-  --text-muted: #5c6560;
-  --border: #dfe3de;
-  --shadow: rgba(15, 30, 20, 0.08) 0 4px 14px -2px;
+  --pitch: #1c6b40;
+  --pitch-dark: #0f4a2a;
+  --gold: #c8981f;
+  --gold-bright: #e0b23a;
+  --accent: #b3272d;
+  --accent-dark: #8c1f24;
+
+  --bg: #efe6cd;
+  --surface: #fbf6e7;
+  --surface-2: #f3ead2;
+  --text: #211b12;
+  --text-muted: #756c53;
+  --border: #d8c79b;
+  --shadow: 3px 3px 0 rgba(33, 27, 18, 0.16);
+  --shadow-sm: 2px 2px 0 rgba(33, 27, 18, 0.16);
+  --shadow-ink: 3px 3px 0 var(--text);
 }
 
 * {
@@ -70,18 +99,70 @@
 
 body {
   margin: 0;
+  position: relative;
+}
+
+/* grão de papel de almanaque — textura sutil sobre todo o app */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.05;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@media (prefers-color-scheme: dark) {
+  body::before {
+    opacity: 0.09;
+    mix-blend-mode: overlay;
+  }
+}
+
+:root[data-theme='dark'] body::before {
+  opacity: 0.09;
+  mix-blend-mode: overlay;
 }
 
 h1,
 h2,
 h3 {
-  font-weight: 700;
+  font-family: var(--display);
+  font-weight: 400;
   color: var(--text);
   margin: 0;
+  line-height: 0.94;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
 }
 
 p {
   margin: 0;
+}
+
+.num {
+  font-family: var(--numeral);
+  font-feature-settings: 'tnum' 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.eyebrow {
+  font-family: var(--body);
+  font-weight: 800;
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.foil-text {
+  background: linear-gradient(100deg, #7a5a17, var(--gold-bright) 22%, #fff3cf 38%, var(--gold) 54%, #fbe39a 68%, #8a6a1e 84%, var(--gold-bright));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
 }
 
 #app {
@@ -115,6 +196,15 @@ p {
   gap: 1.5rem;
 }
 
+/* Sem isso, um item de grid/flex com texto longo (nome de jogador, narração de lance) não
+   encolhe abaixo do próprio conteúdo e estoura a largura do container — a causa mais comum de
+   overflow horizontal no mobile. */
+.side-col,
+.main-col,
+.sidebar {
+  min-width: 0;
+}
+
 @media (min-width: 860px) {
   .two-col {
     grid-template-columns: 21rem 1fr;
@@ -135,24 +225,28 @@ p {
   justify-content: center;
   gap: 0.4rem;
   padding: 0.85rem 1.4rem;
-  border-radius: 999px;
+  border-radius: 0.4rem;
   border: none;
+  font-family: var(--display);
   font-size: 1rem;
-  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
   cursor: pointer;
   text-decoration: none;
   color: inherit;
-  transition: transform 0.1s ease, opacity 0.15s ease;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
   -webkit-tap-highlight-color: transparent;
 }
 
 .btn:active {
-  transform: scale(0.97);
+  transform: translate(2px, 2px);
+  box-shadow: none !important;
 }
 
 .btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .btn-block {
@@ -160,19 +254,35 @@ p {
 }
 
 .btn-primary {
-  background: var(--pitch);
-  color: #fff;
+  background: var(--accent);
+  color: #fff8ea;
+  box-shadow: var(--shadow-ink);
 }
 
 .btn-ghost {
   background: transparent;
-  border: 1.5px solid var(--border);
+  border: 2px solid var(--text);
   color: var(--text);
+}
+
+.btn-reroll {
+  background: var(--surface);
+  border: 2px solid var(--gold);
+  color: var(--gold);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-reroll:not(:disabled):hover {
+  background: color-mix(in srgb, var(--gold) 12%, var(--surface));
 }
 
 .btn-link {
   background: transparent;
   border: none;
+  font-family: var(--body);
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: normal;
   color: var(--text-muted);
   text-decoration: underline;
   padding: 0.4rem;
@@ -182,8 +292,8 @@ p {
 
 .card {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 1rem;
+  border: 1.5px solid var(--text);
+  border-radius: 0.55rem;
   box-shadow: var(--shadow);
 }
 
@@ -193,18 +303,18 @@ p {
   gap: 0.7rem;
   width: 100%;
   padding: 0.65rem 0.85rem;
-  border-radius: 0.85rem;
+  border-radius: 0.5rem;
   border: 1.5px solid var(--border);
   background: var(--surface);
   cursor: pointer;
   text-align: left;
   font: inherit;
   color: inherit;
-  transition: border-color 0.15s ease, transform 0.1s ease;
+  transition: border-color 0.15s ease, transform 0.1s ease, box-shadow 0.1s ease;
 }
 
 .player-card:active {
-  transform: scale(0.98);
+  transform: translate(1px, 1px);
 }
 
 .player-card:disabled {
@@ -214,25 +324,38 @@ p {
 
 .player-card.pickable:hover {
   border-color: var(--pitch);
+  box-shadow: var(--shadow-sm);
+}
+
+.player-card[draggable='true'] {
+  cursor: grab;
+}
+
+.player-card[draggable='true']:active {
+  cursor: grabbing;
 }
 
 .player-card .pos-badge {
   flex-shrink: 0;
-  width: 2.6rem;
-  height: 1.7rem;
+  width: 2.7rem;
+  height: 1.8rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 0.5rem;
+  border-radius: 0.3rem;
+  border: 1.5px solid var(--text);
   background: var(--surface-2);
-  font-size: 0.72rem;
-  font-weight: 700;
+  font-family: var(--body);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
   color: var(--text-muted);
 }
 
 .player-card.pickable .pos-badge {
   background: var(--pitch);
-  color: #fff;
+  border-color: var(--pitch);
+  color: #fff8ea;
 }
 
 .player-card .info {
@@ -243,11 +366,23 @@ p {
   gap: 0.1rem;
 }
 
+.player-card .name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
 .player-card .name {
-  font-weight: 600;
+  min-width: 0;
+  font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.player-card .name-row .star {
+  flex-shrink: 0;
 }
 
 .player-card .meta {
@@ -257,12 +392,15 @@ p {
 
 .player-card .overall {
   flex-shrink: 0;
-  font-weight: 800;
+  font-family: var(--numeral);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
   font-size: 1.05rem;
 }
 
 .star {
   color: var(--gold);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--gold) 55%, transparent);
 }
 
 /* ---------- pills / badges ---------- */
@@ -272,19 +410,26 @@ p {
   align-items: center;
   gap: 0.3rem;
   padding: 0.3rem 0.7rem;
-  border-radius: 999px;
+  border-radius: 0.3rem;
+  font-family: var(--body);
   font-size: 0.78rem;
-  font-weight: 700;
-  background: var(--surface-2);
-  color: var(--text-muted);
-  border: 1px solid var(--border);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  background: transparent;
+  color: var(--text);
+  border: 1.5px solid var(--text);
   white-space: nowrap;
 }
 
 .pill.filled {
-  background: var(--pitch);
-  color: #fff;
-  border-color: var(--pitch);
+  background: var(--accent);
+  color: #fff8ea;
+  border-color: var(--accent);
+}
+
+button.pill {
+  cursor: pointer;
 }
 
 /* ---------- listas de jogadores ---------- */
@@ -302,11 +447,12 @@ p {
   height: 0.5rem;
   border-radius: 999px;
   background: var(--surface-2);
+  border: 1px solid var(--border);
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background: var(--pitch);
+  background: var(--gold);
   transition: width 0.25s ease;
 }

@@ -1,5 +1,5 @@
 {
-  "name": "glorias-da-america",
+  "name": "tictaca",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -12,6 +12,9 @@
     "calibrate": "tsx scripts/calibrate.ts"
   },
   "dependencies": {
+    "@fontsource/anton": "^5.2.7",
+    "@fontsource/manrope": "^5.2.8",
+    "@fontsource/space-mono": "^5.2.9",
     "@fortawesome/fontawesome-svg-core": "^7.3.0",
     "@fortawesome/free-solid-svg-icons": "^7.3.0",
     "@fortawesome/vue-fontawesome": "^3.3.2",

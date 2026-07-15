@@ -6,18 +6,122 @@
     "rankings": "Ranking"
   },
   "draft": {
+    "loading": "Carregando elencos…",
+    "error": "Erro ao carregar dados: {error}",
+    "tagline": "Monte seu time dos sonhos com lendas do futebol sul-americano e corra atrás da Glória Eterna.",
     "round": "Rodada {current} de {total}",
-    "reroll": "Sortear de novo ({count} restantes)",
-    "coachRound": "Escolha o técnico"
+    "formation": "Formação",
+    "style": "Estilo",
+    "styles": {
+      "defensivo": "Defensivo",
+      "equilibrado": "Equilibrado",
+      "ofensivo": "Ofensivo"
+    },
+    "positionGroups": {
+      "goleiro": "Goleiro",
+      "defesa": "Defesa",
+      "meiocampo": "Meio-campo",
+      "ataque": "Ataque"
+    },
+    "chooseHint": "Escolha um jogador para uma posição em aberto.",
+    "rerollTeam": "Sortear outro time ({count})",
+    "coachRound": "Escolha o técnico",
+    "rerollCoach": "Sortear outros ({count})",
+    "coachBadge": "TÉC",
+    "coachLabel": "Técnico: {name}",
+    "startCampaign": "Começar a competição",
+    "squadDone": "Elenco montado!"
   },
   "match": {
     "live": "Ao vivo",
     "penaltyView": "Ver cobrança",
-    "fullTime": "Fim de jogo"
+    "fullTime": "Fim de jogo",
+    "rounds": {
+      "grupo1": "Fase de grupos · 1ª rodada",
+      "grupo2": "Fase de grupos · 2ª rodada",
+      "grupo3": "Fase de grupos · 3ª rodada",
+      "oitavas": "Oitavas de final",
+      "quartas": "Quartas de final",
+      "semi": "Semifinal",
+      "final": "Final"
+    },
+    "standings": {
+      "title": "Classificação do grupo",
+      "team": "Time",
+      "points": "Pts",
+      "goalDiff": "SG",
+      "you": "Seu time",
+      "qualifyHint": "Apenas o 1º colocado avança às oitavas de final."
+    },
+    "noCampaign": "Nenhuma campanha em andamento.",
+    "goToDraft": "Ir para o draft",
+    "soundOn": "🔊 Som ligado",
+    "soundOff": "🔇 Som desligado",
+    "speeds": {
+      "normal": "Normal",
+      "fast": "Rápido",
+      "ultra": "Ultra"
+    },
+    "skipReveal": "Pular direto pro resultado",
+    "nextMatch": "Próxima partida",
+    "viewFinalResult": "Ver resultado final",
+    "youBadge": "VOCÊ",
+    "yourTeam": "Seu time",
+    "liveDot": "ao vivo",
+    "penaltyScore": "pên. {home}×{away}",
+    "shootoutTitle": "Disputa de pênaltis",
+    "stats": "Estatísticas",
+    "shots": "Finalizações",
+    "shotsOnTarget": "No alvo",
+    "fouls": "Faltas",
+    "offsides": "Impedimentos",
+    "yellowCards": "Amarelos",
+    "redCards": "Vermelhos",
+    "goals": "Gols",
+    "ratings": "Notas",
+    "goalKind": {
+      "penalti": "(pên.)",
+      "falta": "(falta)"
+    },
+    "gloryFullTime": "GLÓRIA ETERNA — 7 de 7!",
+    "campaignOver": "Campanha encerrada"
   },
   "result": {
     "glory": "GLÓRIA ETERNA",
+    "over": "Fim de campanha",
     "share": "Compartilhar no WhatsApp",
-    "rematch": "Revanche"
+    "rematch": "Revanche",
+    "newDraft": "Novo draft",
+    "groupStage": "Fase de grupos",
+    "knockoutStage": "Mata-mata",
+    "wins": "{n} vitória | {n} vitórias",
+    "draws": "{n} empate | {n} empates",
+    "losses": "{n} derrota | {n} derrotas",
+    "goals": "{n} gol | {n} gols",
+    "topScorer": "Artilheiro: {name} ({goals})",
+    "shareHeaderGlory": "🏆 GLÓRIA ETERNA — 7 de 7!",
+    "shareHeaderDefault": "Minha campanha:"
+  },
+  "almanaque": {
+    "loading": "Carregando…",
+    "searchPlaceholder": "Buscar por clube ou país…",
+    "titleNumber": "{n}º título",
+    "decade": "Década de {decade}",
+    "coachLabel": "Técnico: {name}",
+    "provisional": "Elenco com registro histórico irregular — dados provisórios."
+  },
+  "rankings": {
+    "comingSoon": "Ranking diário/semanal ainda não implementado — depende do Supabase."
+  },
+  "team": {
+    "overall": "Overall do time",
+    "viewSquad": "Ver elenco completo",
+    "radar": {
+      "attack": "ATA",
+      "dribbling": "DRI",
+      "passing": "PAS",
+      "defense": "DEF",
+      "pace": "VEL"
+    }
   }
 }

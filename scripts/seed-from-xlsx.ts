@@ -19,6 +19,7 @@ import type {
   Position,
   SeedDataset,
 } from '../src/engine/types.js';
+import { joinNameParts } from '../src/engine/naming.js';
 
 const SOURCE_XLSX = resolve(import.meta.dirname, '..', 'Libertadores_Campeoes.xlsx');
 const OUTPUT_JSON = resolve(import.meta.dirname, '..', 'public', 'data', 'dataset.json');
@@ -74,7 +75,12 @@ async function main() {
     country: string;
     titleNumber: number;
   }
-  const indexByClubYear = new Map<string, IndexRow>();
+  // Chave por ano, não por "clube+ano": a aba-índice usa nomes por extenso ("Argentinos
+  // Juniors", "Atlético Nacional", "Atlético Mineiro") que não batem com os nomes abreviados
+  // usados nas abas de cada time ("Argentinos Jrs", "Atl. Nacional", "Atlético-MG"), o que
+  // fazia o lookup falhar silenciosamente e cair no fallback "desconhecido". Ano é único em
+  // cada uma das 67 edições (um campeão por ano), então serve como chave confiável.
+  const indexByYear = new Map<number, IndexRow>();
   for (let r = 3; r <= indexSheet.rowCount; r++) {
     const row = indexSheet.getRow(r);
     const year = cellNumber(row.getCell(1));
@@ -82,7 +88,7 @@ async function main() {
     if (year == null || club == null) continue;
     const country = cellText(row.getCell(4)) ?? 'desconhecido';
     const titleNumber = cellNumber(row.getCell(5)) ?? 1;
-    indexByClubYear.set(`${club}__${year}`, { year, club, country, titleNumber });
+    indexByYear.set(year, { year, club, country, titleNumber });
   }
 
   const editions: Edition[] = [];
@@ -95,7 +101,7 @@ async function main() {
     const [, club, yearStr] = match;
     const year = Number(yearStr);
 
-    const idxRow = indexByClubYear.get(`${club}__${year}`);
+    const idxRow = indexByYear.get(year);
     const editionId = slug(club, year);
     let coachId = `${editionId}-coach`;
 
@@ -109,7 +115,7 @@ async function main() {
       if (!a && !d) continue; // linha em branco (espaçador)
       if (a === 'COMISSÃO TÉCNICA') continue; // cabeçalho de seção
 
-      const name = [a, b].filter(Boolean).join(' ').trim();
+      const name = joinNameParts(a, b);
 
       if (d === 'Técnico') {
         coaches.push({

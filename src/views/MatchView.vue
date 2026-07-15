@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faFutbol, faSquare, faCheck, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { useDatasetStore } from '../stores/datasetStore';
-import { useMatchStore, type CampaignRound } from '../stores/matchStore';
+import { useMatchStore, computeGroupStandings, type CampaignRound } from '../stores/matchStore';
 import { narrate } from '../narration';
 import { formatPlayerNameFull } from '../engine/naming';
 import { computeMatchStats, type GoalKind } from '../engine/matchStats';
@@ -26,6 +27,7 @@ import type { Position } from '../engine/types';
 const dataset = useDatasetStore();
 const match = useMatchStore();
 const router = useRouter();
+const { t } = useI18n();
 
 const playedRound = ref<CampaignRound | null>(null);
 const simulating = ref(false);
@@ -35,25 +37,24 @@ const feedEl = ref<HTMLElement | null>(null);
 let timer: ReturnType<typeof setTimeout> | undefined;
 
 type Speed = 'normal' | 'fast' | 'ultra';
-const SPEEDS: { id: Speed; label: string; delay: number }[] = [
-  { id: 'normal', label: 'Normal', delay: 420 },
-  { id: 'fast', label: 'Rápido', delay: 160 },
-  { id: 'ultra', label: 'Ultra', delay: 40 },
+const SPEEDS: { id: Speed; delay: number }[] = [
+  { id: 'normal', delay: 420 },
+  { id: 'fast', delay: 160 },
+  { id: 'ultra', delay: 40 },
 ];
 const speed = ref<Speed>('normal');
 const currentDelay = computed(() => SPEEDS.find((s) => s.id === speed.value)!.delay);
 
 const NEUTRAL_EVENTS = new Set<MatchEventType>(['kickoff', 'half_time', 'full_time', 'extra_time_start']);
 
-const ROUND_LABELS: Record<CampaignRound['id'], string> = {
-  grupo1: 'Grupo · jogo 1',
-  grupo2: 'Grupo · jogo 2',
-  grupo3: 'Grupo · jogo 3',
-  oitavas: 'Oitavas',
-  quartas: 'Quartas',
-  semi: 'Semifinal',
-  final: 'Final',
-};
+function roundLabel(id: CampaignRound['id']): string {
+  return t(`match.rounds.${id}`);
+}
+
+/** `match.currentIndex` já avança assim que a partida é simulada, antes do lance a lance
+ *  terminar de revelar — então a rodada "em foco" na lateral precisa seguir a que está sendo
+ *  assistida (playedRound), não o índice já incrementado no store. */
+const activeRoundId = computed(() => playedRound.value?.id ?? match.currentRound?.id);
 
 const opponentEdition = computed(() => {
   if (!playedRound.value) return null;
@@ -88,12 +89,27 @@ const liveScore = computed(() => {
   let home = 0;
   let away = 0;
   for (const e of visibleEvents.value) {
-    if (e.type === 'goal') {
+    if (GOAL_EVENTS.has(e.type)) {
       if (e.teamId === 'home') home++;
       else away++;
     }
   }
   return { home, away };
+});
+
+/** Classificação exibida: enquanto a rodada de grupo do jogador está sendo revelada lance a
+ *  lance, a linha dele usa o placar AO VIVO (liveScore), não o resultado final já decidido —
+ *  senão a tabela entregaria o resultado antes da hora, no meio da narração. */
+const displayedStandings = computed(() => {
+  const revealingRound = revealing.value ? playedRound.value : null;
+  if (!revealingRound || revealingRound.knockout) return match.groupStandings;
+
+  const groupRounds = match.rounds.filter((r) => !r.knockout);
+  const liveRounds = groupRounds.map((r) => {
+    if (r.id !== revealingRound.id || !r.result) return r;
+    return { ...r, result: { ...r.result, homeScore: liveScore.value.home, awayScore: liveScore.value.away } };
+  });
+  return computeGroupStandings(liveRounds, match.otherGroupMatches);
 });
 
 function eventSide(e: { type: MatchEventType; teamId: 'home' | 'away' }): 'home' | 'away' | 'neutral' {
@@ -125,7 +141,9 @@ const stats = computed(() => {
   return computeMatchStats(r.result, r.homeLineup, r.awayLineup);
 });
 
-const GOAL_KIND_LABEL: Record<GoalKind, string> = { jogada: '', penalti: '(pên.)', falta: '(falta)' };
+function goalKindLabel(kind: GoalKind): string {
+  return kind === 'jogada' ? '' : t(`match.goalKind.${kind}`);
+}
 
 interface ShootoutRound {
   round: number;
@@ -148,10 +166,10 @@ const shootoutRounds = computed<ShootoutRound[]>(() => {
 const statRows = computed(() =>
   stats.value
     ? [
-        { label: 'Finalizações', home: stats.value.home.shots, away: stats.value.away.shots },
-        { label: 'No alvo', home: stats.value.home.shotsOnTarget, away: stats.value.away.shotsOnTarget },
-        { label: 'Faltas', home: stats.value.home.fouls, away: stats.value.away.fouls },
-        { label: 'Impedimentos', home: stats.value.home.offsides, away: stats.value.away.offsides },
+        { labelKey: 'match.shots', home: stats.value.home.shots, away: stats.value.away.shots },
+        { labelKey: 'match.shotsOnTarget', home: stats.value.home.shotsOnTarget, away: stats.value.away.shotsOnTarget },
+        { labelKey: 'match.fouls', home: stats.value.home.fouls, away: stats.value.away.fouls },
+        { labelKey: 'match.offsides', home: stats.value.home.offsides, away: stats.value.away.offsides },
       ]
     : [],
 );
@@ -284,55 +302,86 @@ function bannerStyle(club: string) {
   const c = getClubColors(club);
   return { background: c.primary, color: getContrastText(c.primary) };
 }
+
+function standingClub(editionId: string): string {
+  return dataset.editions.find((e) => e.id === editionId)?.club ?? '?';
+}
 </script>
 
 <template>
   <main class="screen screen-wide">
     <div v-if="!match.rounds.length" class="empty">
-      <p>Nenhuma campanha em andamento.</p>
-      <button class="btn btn-primary" @click="router.push('/draft')">Ir para o draft</button>
+      <p>{{ t('match.noCampaign') }}</p>
+      <button class="btn btn-primary" @click="router.push('/draft')">{{ t('match.goToDraft') }}</button>
     </div>
 
-    <div v-else class="two-col">
-      <div class="side-col">
-        <button class="btn btn-ghost btn-block sound-toggle" @click="toggleSound">
-          {{ soundEnabled ? '🔊 Som ligado' : '🔇 Som desligado' }}
-        </button>
-        <ol class="rounds">
-          <li
-            v-for="(r, i) in match.rounds"
-            :key="r.id"
-            class="round-item"
-            :class="{ done: scoreVisible(r), won: scoreVisible(r) && match.wonRound(r), active: i === match.currentIndex }"
-          >
-            <span class="round-label">{{ ROUND_LABELS[r.id] }}</span>
-            <span v-if="scoreVisible(r)" class="round-score">{{ r.result!.homeScore }}×{{ r.result!.awayScore }}</span>
-          </li>
-        </ol>
+    <div v-else class="two-col match-live">
+      <div class="sidebar">
+        <div class="side-col side-top">
+          <button class="btn btn-ghost btn-block sound-toggle" @click="toggleSound">
+            {{ soundEnabled ? t('match.soundOn') : t('match.soundOff') }}
+          </button>
+        </div>
+
+        <div class="side-col side-bottom">
+          <ol class="rounds">
+            <li
+              v-for="r in match.rounds"
+              :key="r.id"
+              class="round-item"
+              :class="{ done: scoreVisible(r), won: scoreVisible(r) && match.wonRound(r), active: r.id === activeRoundId }"
+            >
+              <span class="round-label">{{ roundLabel(r.id) }}</span>
+              <span v-if="scoreVisible(r)" class="round-score">{{ r.result!.homeScore }}×{{ r.result!.awayScore }}</span>
+            </li>
+          </ol>
+
+          <div v-if="displayedStandings.length" class="standings card">
+            <span class="eyebrow">{{ t('match.standings.title') }}</span>
+            <div class="standings-row header">
+              <span class="pos"></span>
+              <span class="team">{{ t('match.standings.team') }}</span>
+              <span class="num">{{ t('match.standings.points') }}</span>
+              <span class="num">{{ t('match.standings.goalDiff') }}</span>
+            </div>
+            <div
+              v-for="(row, i) in displayedStandings"
+              :key="row.id"
+              class="standings-row"
+              :class="{ me: row.id === 'player', qualified: i === 0 }"
+            >
+              <span class="pos">{{ i + 1 }}</span>
+              <span class="team">{{ row.id === 'player' ? t('match.standings.you') : standingClub(row.id) }}</span>
+              <span class="num">{{ row.points }}</span>
+              <span class="num">{{ row.goalsFor - row.goalsAgainst > 0 ? '+' : '' }}{{ row.goalsFor - row.goalsAgainst }}</span>
+            </div>
+            <p class="standings-hint">{{ t('match.standings.qualifyHint') }}</p>
+          </div>
+        </div>
       </div>
 
       <div class="main-col">
         <section v-if="!playedRound && !match.isCampaignOver" class="stage card">
-          <h2>{{ ROUND_LABELS[match.currentRound!.id] }}</h2>
+          <h2>{{ roundLabel(match.currentRound!.id) }}</h2>
           <button class="btn btn-primary btn-block" :disabled="simulating" @click="simulate">{{ $t('match.live') }}</button>
         </section>
 
         <section v-else-if="playedRound" class="stage">
           <button class="btn btn-primary btn-block" :disabled="revealing" @click="next">
-            {{ match.isCampaignOver ? 'Ver resultado final' : 'Próxima partida' }}
+            {{ match.isCampaignOver ? t('match.viewFinalResult') : t('match.nextMatch') }}
           </button>
 
           <div class="scoreboard card">
             <div class="teams">
               <div class="team">
-                <span class="crest home-crest">VOCÊ</span>
-                <span class="team-name">Seu time</span>
+                <span class="crest home-crest">{{ t('match.youBadge') }}</span>
+                <span class="team-name">{{ t('match.yourTeam') }}</span>
               </div>
               <div class="score-box">
                 <span class="score">{{ liveScore.home }} × {{ liveScore.away }}</span>
-                <span v-if="revealing" class="live-dot">● ao vivo</span>
+                <span v-if="revealing" class="live-dot">● {{ t('match.liveDot') }}</span>
                 <span v-else-if="playedRound.result!.wentToPenalties" class="hint">
-                  pên. {{ playedRound.result!.penaltyScore!.home }}×{{ playedRound.result!.penaltyScore!.away }}
+                  {{ t('match.penaltyScore', { home: playedRound.result!.penaltyScore!.home, away: playedRound.result!.penaltyScore!.away }) }}
                 </span>
               </div>
               <div class="team">
@@ -353,10 +402,10 @@ function bannerStyle(club: string) {
                 :class="{ filled: speed === s.id }"
                 @click="speed = s.id"
               >
-                {{ s.label }}
+                {{ t(`match.speeds.${s.id}`) }}
               </button>
             </div>
-            <button class="btn btn-ghost btn-block" @click="skipReveal">⏭ Pular direto pro resultado</button>
+            <button class="btn btn-ghost btn-block" @click="skipReveal">⏭ {{ t('match.skipReveal') }}</button>
           </div>
 
           <ul ref="feedEl" class="feed">
@@ -365,12 +414,12 @@ function bannerStyle(club: string) {
               <FontAwesomeIcon v-if="isGoalEvent(e.type)" :icon="faFutbol" class="icon-ball" />
               <FontAwesomeIcon v-else-if="isYellowEvent(e.type)" :icon="faSquare" class="icon-card icon-card-yellow" />
               <FontAwesomeIcon v-else-if="isRedEvent(e.type)" :icon="faSquare" class="icon-card icon-card-red" />
-              <span>{{ e.text }}</span>
+              <span class="feed-text">{{ e.text }}</span>
             </li>
           </ul>
 
           <div v-if="!revealing && shootoutRounds.length" class="shootout card">
-            <h3>⚡ Disputa de pênaltis</h3>
+            <h3>⚡ {{ t('match.shootoutTitle') }}</h3>
             <p class="shootout-score">
               {{ playedRound.result!.penaltyScore!.home }} <span class="dash">—</span> {{ playedRound.result!.penaltyScore!.away }}
             </p>
@@ -400,34 +449,35 @@ function bannerStyle(club: string) {
           </div>
 
           <div v-if="!revealing && stats" class="stats card">
-            <h3>Estatísticas</h3>
-            <div class="stat-row" v-for="row in statRows" :key="row.label">
+            <h3>{{ t('match.stats') }}</h3>
+            <div class="stat-row" v-for="row in statRows" :key="row.labelKey">
               <span class="stat-value">{{ row.home }}</span>
-              <span class="stat-label">{{ row.label }}</span>
+              <span class="stat-label">{{ t(row.labelKey) }}</span>
               <span class="stat-value">{{ row.away }}</span>
             </div>
             <div class="stat-row">
               <span class="stat-value">{{ stats.home.yellow }}</span>
-              <span class="stat-label"><FontAwesomeIcon :icon="faSquare" class="icon-card icon-card-yellow" /> Amarelos</span>
+              <span class="stat-label"><FontAwesomeIcon :icon="faSquare" class="icon-card icon-card-yellow" /> {{ t('match.yellowCards') }}</span>
               <span class="stat-value">{{ stats.away.yellow }}</span>
             </div>
             <div class="stat-row">
               <span class="stat-value">{{ stats.home.red }}</span>
-              <span class="stat-label"><FontAwesomeIcon :icon="faSquare" class="icon-card icon-card-red" /> Vermelhos</span>
+              <span class="stat-label"><FontAwesomeIcon :icon="faSquare" class="icon-card icon-card-red" /> {{ t('match.redCards') }}</span>
               <span class="stat-value">{{ stats.away.red }}</span>
             </div>
 
             <template v-if="stats.goals.length">
-              <h3>Gols</h3>
+              <h3>{{ t('match.goals') }}</h3>
               <ul class="goal-list">
                 <li v-for="(g, i) in stats.goals" :key="i" :class="g.teamId">
                   <FontAwesomeIcon :icon="faFutbol" class="icon-ball" />
-                  {{ g.minute }}' {{ playerLabel(g.playerId) }} <span class="goal-kind">{{ GOAL_KIND_LABEL[g.kind] }}</span>
+                  <span class="goal-text">{{ g.minute }}' {{ playerLabel(g.playerId) }}</span>
+                  <span class="goal-kind">{{ goalKindLabel(g.kind) }}</span>
                 </li>
               </ul>
             </template>
 
-            <h3>Notas</h3>
+            <h3>{{ t('match.ratings') }}</h3>
             <div class="ratings-cols">
               <ul class="rating-list">
                 <li v-for="p in homeRatings" :key="p.playerId">
@@ -446,7 +496,7 @@ function bannerStyle(club: string) {
         </section>
 
         <section v-else class="stage card center">
-          <h2>{{ match.glory ? 'GLÓRIA ETERNA — 7 de 7!' : 'Campanha encerrada' }}</h2>
+          <h2>{{ match.glory ? t('match.gloryFullTime') : t('match.campaignOver') }}</h2>
           <button class="btn btn-primary btn-block" @click="router.push('/result')">{{ $t('match.fullTime') }}</button>
         </section>
       </div>
@@ -464,6 +514,48 @@ function bannerStyle(club: string) {
   padding-top: 3rem;
 }
 
+/* No mobile (1 coluna), a disputa da partida (main-col) fica logo abaixo do CTA de som,
+   antes dos detalhes das rodadas e da classificação do grupo — o wrapper ".sidebar" "some" da
+   árvore de layout (display: contents) pra isso, deixando side-top/main-col/side-bottom como
+   itens diretos e reordenáveis do grid. Em telas largas o wrapper volta a ser uma coluna
+   normal — som e rodadas/classificação empilhados à esquerda, como antes. */
+.match-live .sidebar {
+  display: contents;
+}
+
+.match-live .side-top {
+  order: 1;
+}
+
+.match-live .main-col {
+  order: 2;
+}
+
+.match-live .side-bottom {
+  order: 3;
+}
+
+@media (min-width: 860px) {
+  .match-live .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    position: sticky;
+    top: 1.5rem;
+  }
+
+  .match-live .side-col.side-top,
+  .match-live .side-col.side-bottom {
+    position: static;
+  }
+
+  .match-live .side-top,
+  .match-live .main-col,
+  .match-live .side-bottom {
+    order: 0;
+  }
+}
+
 .sound-toggle {
   margin-bottom: 0.75rem;
 }
@@ -471,10 +563,81 @@ function bannerStyle(club: string) {
 .rounds {
   list-style: none;
   padding: 0;
-  margin: 0;
+  margin: 0 0 0.75rem;
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+}
+
+.standings {
+  padding: 0.85rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.standings .eyebrow {
+  margin-bottom: 0.15rem;
+}
+
+.standings-row {
+  display: grid;
+  grid-template-columns: 1.4rem 1fr 2.2rem 2.2rem;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0;
+  font-size: 0.82rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.standings-row:last-child {
+  border-bottom: none;
+}
+
+.standings-row.header {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 800;
+  border-bottom: 1.5px solid var(--text);
+}
+
+.standings-row .pos {
+  font-family: var(--numeral);
+  color: var(--text-muted);
+}
+
+.standings-row .team {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.standings-row .num {
+  font-family: var(--numeral);
+  font-weight: 700;
+  text-align: right;
+}
+
+.standings-row.qualified {
+  border-bottom: 2px solid var(--gold);
+}
+
+.standings-row.me {
+  background: color-mix(in srgb, var(--pitch) 12%, transparent);
+  font-weight: 700;
+}
+
+.standings-row.me .team {
+  color: var(--text);
+}
+
+.standings-hint {
+  margin-top: 0.15rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
 }
 
 .round-item {
@@ -482,7 +645,7 @@ function bannerStyle(club: string) {
   justify-content: space-between;
   align-items: center;
   padding: 0.6rem 0.85rem;
-  border-radius: 0.7rem;
+  border-radius: 0.4rem;
   border: 1.5px solid var(--border);
   color: var(--text-muted);
   font-size: 0.88rem;
@@ -497,12 +660,21 @@ function bannerStyle(club: string) {
 }
 
 .round-item.active {
-  border-color: var(--pitch);
-  color: var(--pitch);
-  font-weight: 700;
+  position: relative;
+  border: 2px solid var(--gold);
+  background: color-mix(in srgb, var(--gold) 14%, var(--surface));
+  color: var(--text);
+  font-weight: 800;
+  box-shadow: var(--shadow-sm);
+}
+
+.round-item.active .round-label::before {
+  content: '▸ ';
+  color: var(--gold);
 }
 
 .round-score {
+  font-family: var(--numeral);
   font-weight: 700;
 }
 
@@ -515,6 +687,10 @@ function bannerStyle(club: string) {
 .stage.card {
   padding: 1.25rem;
   text-align: center;
+}
+
+.stage.card h2 {
+  margin-bottom: 0.5rem;
 }
 
 .stage.center {
@@ -556,11 +732,13 @@ function bannerStyle(club: string) {
   width: 2.4rem;
   height: 2.4rem;
   border-radius: 50%;
+  border: 2px solid var(--text);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.3);
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  font-family: var(--display);
   font-size: 0.65rem;
-  font-weight: 800;
   flex-shrink: 0;
 }
 
@@ -578,8 +756,9 @@ function bannerStyle(club: string) {
 }
 
 .score {
+  font-family: var(--numeral);
   font-size: 1.9rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .live-dot {
@@ -627,6 +806,12 @@ function bannerStyle(club: string) {
   font-size: 0.9rem;
   animation: pop-in 0.2s ease;
   max-width: 82%;
+  min-width: 0;
+}
+
+.feed-text {
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 
 .feed-item.home {
@@ -681,6 +866,7 @@ function bannerStyle(club: string) {
 
 .minute {
   flex-shrink: 0;
+  font-family: var(--numeral);
   font-weight: 700;
   color: var(--pitch);
   width: 2.2rem;
@@ -720,14 +906,14 @@ function bannerStyle(club: string) {
 .shootout h3 {
   margin: 0 0 0.3rem;
   font-size: 0.9rem;
-  text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text);
 }
 
 .shootout-score {
+  font-family: var(--numeral);
   font-size: 1.6rem;
-  font-weight: 800;
+  font-weight: 700;
   margin: 0 0 0.9rem;
 }
 
@@ -766,6 +952,8 @@ function bannerStyle(club: string) {
 }
 
 .kick-name {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -773,6 +961,7 @@ function bannerStyle(club: string) {
 
 .round-num {
   flex-shrink: 0;
+  font-family: var(--numeral);
   font-size: 0.72rem;
   font-weight: 700;
   color: var(--text-muted);
@@ -821,6 +1010,8 @@ function bannerStyle(club: string) {
 }
 
 .stat-row .stat-value {
+  min-width: 0;
+  font-family: var(--numeral);
   font-weight: 700;
 }
 
@@ -833,9 +1024,11 @@ function bannerStyle(club: string) {
   align-items: center;
   justify-content: center;
   gap: 0.3rem;
+  min-width: 0;
   color: var(--text-muted);
   font-size: 0.78rem;
   text-align: center;
+  overflow-wrap: break-word;
 }
 
 .goal-list {
@@ -852,6 +1045,11 @@ function bannerStyle(club: string) {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+}
+
+.goal-text {
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 
 .goal-list li.away {
@@ -871,6 +1069,7 @@ function bannerStyle(club: string) {
 }
 
 .rating-list {
+  min-width: 0;
   list-style: none;
   padding: 0;
   margin: 0;
@@ -888,6 +1087,8 @@ function bannerStyle(club: string) {
 }
 
 .rating-name {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -895,10 +1096,12 @@ function bannerStyle(club: string) {
 
 .rating-badge {
   flex-shrink: 0;
-  font-weight: 800;
+  font-family: var(--numeral);
+  font-weight: 700;
   font-size: 0.78rem;
   padding: 0.1rem 0.45rem;
-  border-radius: 0.4rem;
+  border-radius: 0.3rem;
+  border: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--text-muted);
 }

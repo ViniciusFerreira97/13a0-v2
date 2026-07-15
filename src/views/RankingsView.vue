@@ -7,7 +7,7 @@ const { t } = useI18n();
 <template>
   <main class="screen placeholder">
     <h2>{{ t('nav.rankings') }}</h2>
-    <p class="hint">Ranking diário/semanal ainda não implementado — depende do Supabase (§8.2).</p>
+    <p class="hint">{{ t('rankings.comingSoon') }}</p>
   </main>
 </template>
 

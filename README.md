@@ -1,4 +1,4 @@
-# Glórias da América
+# TICTACA
 
 Draft + simulação com elencos campeões continentais da América do Sul (1960–2025). Vite + Vue 3 + TypeScript.
 

@@ -21,8 +21,88 @@ export interface CampaignRound {
   awayLineup?: Player[];
 }
 
+/** Jogo entre dois adversários do grupo (nenhum dos dois é o time do jogador) — simulado
+ *  inteiro em segundo plano, sem lance a lance, só para alimentar a classificação. */
+export interface OtherGroupMatch {
+  homeEditionId: string;
+  awayEditionId: string;
+  result: MatchResult;
+}
+
+export interface StandingRow {
+  /** 'player' para o time do usuário, ou o id da edição adversária. */
+  id: string;
+  played: number;
+  points: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  goalsFor: number;
+  goalsAgainst: number;
+}
+
 const ROUND_IDS: CampaignRound['id'][] = ['grupo1', 'grupo2', 'grupo3', 'oitavas', 'quartas', 'semi', 'final'];
 const KNOCKOUT_FROM_INDEX = 3;
+
+/**
+ * Classificação do grupo: 4 times (jogador + 3 adversários), turno único — cada um enfrenta os
+ * outros 3 uma vez. Função pura (sem depender do store) para que a view possa recalcular a
+ * mesma tabela substituindo, na rodada em revelação, o resultado final pelo placar ao vivo
+ * (§ pedido do usuário: a classificação deve acompanhar o placar ao vivo, não só o resultado
+ * já fechado) — em empate de critérios, o time do jogador fica na frente (ordenação estável,
+ * jogador é o primeiro da lista).
+ */
+export function computeGroupStandings(groupRounds: CampaignRound[], otherMatches: OtherGroupMatch[]): StandingRow[] {
+  if (!groupRounds.length) return [];
+
+  const rows = new Map<string, StandingRow>();
+  const rowFor = (id: string): StandingRow => {
+    let row = rows.get(id);
+    if (!row) {
+      row = { id, played: 0, points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 };
+      rows.set(id, row);
+    }
+    return row;
+  };
+  rowFor('player');
+  for (const r of groupRounds) rowFor(r.opponentEditionId);
+
+  function apply(homeId: string, awayId: string, result: MatchResult) {
+    const home = rowFor(homeId);
+    const away = rowFor(awayId);
+    home.played++;
+    away.played++;
+    home.goalsFor += result.homeScore;
+    home.goalsAgainst += result.awayScore;
+    away.goalsFor += result.awayScore;
+    away.goalsAgainst += result.homeScore;
+    if (result.homeScore > result.awayScore) {
+      home.wins++;
+      home.points += 3;
+      away.losses++;
+    } else if (result.homeScore < result.awayScore) {
+      away.wins++;
+      away.points += 3;
+      home.losses++;
+    } else {
+      home.draws++;
+      away.draws++;
+      home.points++;
+      away.points++;
+    }
+  }
+
+  for (const r of groupRounds) {
+    if (r.result) apply('player', r.opponentEditionId, r.result);
+  }
+  for (const m of otherMatches) {
+    apply(m.homeEditionId, m.awayEditionId, m.result);
+  }
+
+  return [...rows.values()].sort(
+    (a, b) => b.points - a.points || (b.goalsFor - b.goalsAgainst) - (a.goalsFor - a.goalsAgainst) || b.goalsFor - a.goalsFor,
+  );
+}
 
 function bestEleven(editionId: string, playersByEdition: Map<string, Player[]>): Player[] {
   const players = playersByEdition.get(editionId) ?? [];
@@ -40,6 +120,7 @@ export const useMatchStore = defineStore('match', () => {
 
   const campaignSeed = ref<string>('');
   const rounds = ref<CampaignRound[]>([]);
+  const otherGroupMatches = ref<OtherGroupMatch[]>([]);
   const currentIndex = ref(0);
   const eliminated = ref(false);
   const runId = ref<string | null>(null);
@@ -49,6 +130,13 @@ export const useMatchStore = defineStore('match', () => {
   const isCampaignOver = computed(() => eliminated.value || currentIndex.value >= rounds.value.length);
   const glory = computed(
     () => currentIndex.value === rounds.value.length && rounds.value.every((r) => r.result && wonRound(r)),
+  );
+
+  const groupStandings = computed<StandingRow[]>(() =>
+    computeGroupStandings(
+      rounds.value.filter((r) => !r.knockout),
+      otherGroupMatches.value,
+    ),
   );
 
   function wonRound(r: CampaignRound): boolean {
@@ -73,7 +161,37 @@ export const useMatchStore = defineStore('match', () => {
     currentIndex.value = 0;
     eliminated.value = false;
     runId.value = null;
+    otherGroupMatches.value = [];
     void persistRunStart();
+  }
+
+  /**
+   * Grupo de 4 (jogador + 3 adversários), turno único. As rodadas são simultâneas de verdade:
+   * cada vez que o jogador joga sua partida da rodada N, o outro confronto da MESMA rodada
+   * (entre os dois adversários que não jogam contra o jogador) é simulado junto, na hora — nunca
+   * antes. Assim a classificação nunca aparece com pontos de rodadas que ainda não aconteceram.
+   */
+  function otherGroupFixtureFor(roundId: CampaignRound['id'], campaignRounds: CampaignRound[]): [string, string] | null {
+    const groupRounds = campaignRounds.filter((r) => !r.knockout);
+    if (groupRounds.length !== 3) return null;
+    const [a, b, c] = groupRounds.map((r) => r.opponentEditionId);
+    const fixtureByRound: Partial<Record<CampaignRound['id'], [string, string]>> = {
+      grupo1: [b, c],
+      grupo2: [c, a],
+      grupo3: [a, b],
+    };
+    return fixtureByRound[roundId] ?? null;
+  }
+
+  function simulateOtherGroupMatch(homeId: string, awayId: string): OtherGroupMatch {
+    const homeEdition = dataset.editions.find((e) => e.id === homeId)!;
+    const awayEdition = dataset.editions.find((e) => e.id === awayId)!;
+    const result = simulateMatch(
+      opponentTeamSetup(homeEdition, 'home'),
+      opponentTeamSetup(awayEdition, 'away'),
+      { seed: `${campaignSeed.value}-group-${homeId}-${awayId}`, knockout: false },
+    );
+    return { homeEditionId: homeId, awayEditionId: awayId, result };
   }
 
   /**
@@ -160,7 +278,21 @@ export const useMatchStore = defineStore('match', () => {
     round.result = result;
     round.homeLineup = home.lineup;
     round.awayLineup = away.lineup;
-    if (round.knockout && !wonRound(round)) eliminated.value = true;
+
+    if (!round.knockout) {
+      // Rodada simultânea de verdade: o confronto entre os outros dois times do grupo nesta
+      // mesma rodada só é simulado agora — nunca antes — para a classificação nunca "vazar"
+      // pontos de rodadas futuras.
+      const fixture = otherGroupFixtureFor(round.id, rounds.value);
+      if (fixture) otherGroupMatches.value.push(simulateOtherGroupMatch(fixture[0], fixture[1]));
+    }
+
+    if (round.knockout) {
+      if (!wonRound(round)) eliminated.value = true;
+    } else if (round.id === 'grupo3' && groupStandings.value[0]?.id !== 'player') {
+      // fase de grupos terminou e o jogador não ficou em 1º — só o líder avança às oitavas.
+      eliminated.value = true;
+    }
     currentIndex.value++;
     void persistRunUpdate();
     return round;
@@ -169,6 +301,7 @@ export const useMatchStore = defineStore('match', () => {
   function reset() {
     campaignSeed.value = '';
     rounds.value = [];
+    otherGroupMatches.value = [];
     currentIndex.value = 0;
     eliminated.value = false;
     runId.value = null;
@@ -177,11 +310,13 @@ export const useMatchStore = defineStore('match', () => {
 
   return {
     rounds,
+    otherGroupMatches,
     currentIndex,
     currentRound,
     isCampaignOver,
     eliminated,
     glory,
+    groupStandings,
     runId,
     syncError,
     startCampaign,

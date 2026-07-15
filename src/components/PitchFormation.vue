@@ -1,16 +1,34 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { Position } from '../engine/types';
+import type { PitchSlot } from '../engine/pitch';
 
-export interface PitchSlot {
-  position: Position;
-  filled: boolean;
-  label?: string;
-  shirtNumber?: number | null;
-  overall?: number;
+export type { PitchSlot };
+
+const props = defineProps<{
+  slots: PitchSlot[];
+  /** Posição do jogador sendo arrastado (drag-and-drop no draft, só web) — só slots vazios
+   *  dessa posição aceitam o drop; qualquer outra coisa (posição errada, slot ocupado) não. */
+  dragPosition?: Position | null;
+}>();
+
+const emit = defineEmits<{ drop: [position: Position] }>();
+
+function isDropTarget(slot: PitchSlot): boolean {
+  return !!props.dragPosition && !slot.filled && slot.position === props.dragPosition;
 }
 
-const props = defineProps<{ slots: PitchSlot[] }>();
+function onDragOver(slot: PitchSlot, event: DragEvent) {
+  if (!isDropTarget(slot)) return;
+  event.preventDefault();
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+}
+
+function onDrop(slot: PitchSlot, event: DragEvent) {
+  if (!isDropTarget(slot)) return;
+  event.preventDefault();
+  emit('drop', slot.position);
+}
 
 // Goleiro embaixo, ataque em cima — leitura padrão de campo tático.
 const ROW_OF: Record<Position, number> = {
@@ -73,8 +91,10 @@ const rows = computed(() => {
           v-for="(s, j) in row"
           :key="j"
           class="dot"
-          :class="{ filled: s.filled }"
+          :class="{ filled: s.filled, 'drop-target': isDropTarget(s) }"
           :title="s.label ?? s.position"
+          @dragover="onDragOver(s, $event)"
+          @drop="onDrop(s, $event)"
         >
           <span v-if="s.filled && s.overall != null" class="overall-badge">{{ s.overall }}</span>
           <span class="main">{{ s.filled ? (s.shirtNumber ?? s.position) : s.position }}</span>
@@ -90,9 +110,12 @@ const rows = computed(() => {
   position: relative;
   width: 100%;
   aspect-ratio: 3 / 4;
-  border-radius: 0.85rem;
-  background: linear-gradient(180deg, #1a8a4a, #0e6e3a);
-  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-radius: 0.55rem;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0 10%, rgba(0, 0, 0, 0.05) 10% 20%),
+    linear-gradient(180deg, var(--pitch), var(--pitch-dark));
+  border: 1.5px solid var(--text);
+  box-shadow: var(--shadow);
   overflow: hidden;
 }
 
@@ -159,20 +182,39 @@ const rows = computed(() => {
   width: 2.6rem;
   height: 2.6rem;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.12);
   border: 1.5px dashed rgba(255, 255, 255, 0.55);
   color: #fff;
+  font-family: var(--numeral);
   font-size: 0.6rem;
-  font-weight: 800;
+  font-weight: 700;
   flex-shrink: 0;
 }
 
 .dot.filled {
-  background: #fff;
+  background: var(--surface);
   border-style: solid;
-  border-color: #fff;
-  color: var(--pitch-dark);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  border-color: var(--gold);
+  border-width: 2px;
+  color: var(--text);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+.dot.drop-target {
+  background: color-mix(in srgb, var(--gold) 35%, transparent);
+  border-style: solid;
+  border-color: var(--gold);
+  animation: drop-target-pulse 1s ease-in-out infinite;
+}
+
+@keyframes drop-target-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--gold) 55%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 6px transparent;
+  }
 }
 
 .dot .main {
@@ -181,6 +223,7 @@ const rows = computed(() => {
 }
 
 .dot .label {
+  font-family: var(--body);
   font-size: 0.5rem;
   font-weight: 700;
   max-width: 2.4rem;
@@ -191,20 +234,21 @@ const rows = computed(() => {
 
 .overall-badge {
   position: absolute;
-  top: -0.35rem;
-  right: -0.35rem;
-  min-width: 1.3rem;
-  height: 1.3rem;
+  top: -0.4rem;
+  right: -0.4rem;
+  min-width: 1.35rem;
+  height: 1.35rem;
   padding: 0 0.15rem;
-  border-radius: 999px;
+  border-radius: 0.3rem;
   background: var(--gold);
-  color: #14171a;
-  font-size: 0.52rem;
-  font-weight: 800;
+  color: #211b12;
+  font-family: var(--numeral);
+  font-size: 0.55rem;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1.5px solid rgba(255, 255, 255, 0.9);
+  border: 1.5px solid var(--text);
   line-height: 1;
 }
 
