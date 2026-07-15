@@ -1,0 +1,23 @@
+{
+  "nav": {
+    "home": "Início",
+    "draft": "Draft",
+    "almanaque": "Almanaque",
+    "rankings": "Ranking"
+  },
+  "draft": {
+    "round": "Rodada {current} de {total}",
+    "reroll": "Sortear de novo ({count} restantes)",
+    "coachRound": "Escolha o técnico"
+  },
+  "match": {
+    "live": "Ao vivo",
+    "penaltyView": "Ver cobrança",
+    "fullTime": "Fim de jogo"
+  },
+  "result": {
+    "glory": "GLÓRIA ETERNA",
+    "share": "Compartilhar no WhatsApp",
+    "rematch": "Revanche"
+  }
+}

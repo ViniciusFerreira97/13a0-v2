@@ -1,0 +1,312 @@
+:root {
+  --pitch: #0e7a41;
+  --pitch-dark: #0a5c30;
+  --gold: #d69e0a;
+  --bg: #f5f6f4;
+  --surface: #ffffff;
+  --surface-2: #eef1ec;
+  --text: #14171a;
+  --text-muted: #5c6560;
+  --border: #dfe3de;
+  --danger: #c0392b;
+  --shadow: rgba(15, 30, 20, 0.08) 0 4px 14px -2px;
+
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+
+  font: 16px/1.45 var(--sans);
+  color-scheme: light dark;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --pitch: #22c55e;
+    --pitch-dark: #16a34a;
+    --gold: #eab308;
+    --bg: #0e1310;
+    --surface: #171d19;
+    --surface-2: #1e2621;
+    --text: #edf2ee;
+    --text-muted: #93a199;
+    --border: #2a332c;
+    --shadow: rgba(0, 0, 0, 0.4) 0 4px 14px -2px;
+  }
+}
+
+:root[data-theme='dark'] {
+  --pitch: #22c55e;
+  --pitch-dark: #16a34a;
+  --gold: #eab308;
+  --bg: #0e1310;
+  --surface: #171d19;
+  --surface-2: #1e2621;
+  --text: #edf2ee;
+  --text-muted: #93a199;
+  --border: #2a332c;
+  --shadow: rgba(0, 0, 0, 0.4) 0 4px 14px -2px;
+}
+
+:root[data-theme='light'] {
+  --pitch: #0e7a41;
+  --pitch-dark: #0a5c30;
+  --gold: #d69e0a;
+  --bg: #f5f6f4;
+  --surface: #ffffff;
+  --surface-2: #eef1ec;
+  --text: #14171a;
+  --text-muted: #5c6560;
+  --border: #dfe3de;
+  --shadow: rgba(15, 30, 20, 0.08) 0 4px 14px -2px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+p {
+  margin: 0;
+}
+
+#app {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+.screen {
+  min-height: 100svh;
+  padding: 1.25rem 1rem 2rem;
+  max-width: 34rem;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.screen-wide {
+  max-width: 72rem;
+}
+
+@media (min-width: 768px) {
+  .screen {
+    padding: 2rem 1.5rem 3rem;
+  }
+}
+
+/* ---------- layout de duas colunas (desktop) ---------- */
+
+.two-col {
+  display: grid;
+  gap: 1.5rem;
+}
+
+@media (min-width: 860px) {
+  .two-col {
+    grid-template-columns: 21rem 1fr;
+    align-items: start;
+  }
+
+  .two-col .side-col {
+    position: sticky;
+    top: 1.5rem;
+  }
+}
+
+/* ---------- botões ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.85rem 1.4rem;
+  border-radius: 999px;
+  border: none;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.1s ease, opacity 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.btn-primary {
+  background: var(--pitch);
+  color: #fff;
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1.5px solid var(--border);
+  color: var(--text);
+}
+
+.btn-link {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  text-decoration: underline;
+  padding: 0.4rem;
+}
+
+/* ---------- cards ---------- */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  box-shadow: var(--shadow);
+}
+
+.player-card {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.85rem;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition: border-color 0.15s ease, transform 0.1s ease;
+}
+
+.player-card:active {
+  transform: scale(0.98);
+}
+
+.player-card:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.player-card.pickable:hover {
+  border-color: var(--pitch);
+}
+
+.player-card .pos-badge {
+  flex-shrink: 0;
+  width: 2.6rem;
+  height: 1.7rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  background: var(--surface-2);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.player-card.pickable .pos-badge {
+  background: var(--pitch);
+  color: #fff;
+}
+
+.player-card .info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.player-card .name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.player-card .meta {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.player-card .overall {
+  flex-shrink: 0;
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+
+.star {
+  color: var(--gold);
+}
+
+/* ---------- pills / badges ---------- */
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.pill.filled {
+  background: var(--pitch);
+  color: #fff;
+  border-color: var(--pitch);
+}
+
+/* ---------- listas de jogadores ---------- */
+
+.roster-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 0.5rem;
+}
+
+/* ---------- progresso ---------- */
+
+.progress-track {
+  width: 100%;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--pitch);
+  transition: width 0.25s ease;
+}
