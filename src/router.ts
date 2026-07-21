@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import { useMatchStore } from './stores/matchStore';
 
 export const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     { path: '/', redirect: '/draft' },
     { path: '/draft', name: 'draft', component: () => import('./views/DraftView.vue') },
