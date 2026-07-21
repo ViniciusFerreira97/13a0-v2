@@ -42,7 +42,7 @@ export const useDatasetStore = defineStore('dataset', () => {
     loading.value = true;
     error.value = null;
     try {
-      const res = await fetch('/data/dataset.json');
+      const res = await fetch(`${import.meta.env.BASE_URL}data/dataset.json`);
       if (!res.ok) throw new Error(`falha ao carregar dataset: ${res.status}`);
       dataset.value = (await res.json()) as SeedDataset;
     } catch (err) {
